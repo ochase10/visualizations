@@ -728,5 +728,5 @@ figure.frameon:     True      # enable figure frame
 ## Additional arguments to pass to convert.
 #animation.convert_args: -layers, OptimizePlus
 #
-#animation.embed_limit:  20.0     # Limit, in MB, of size of base64 encoded
+#animation.embed_limit:  50.0     # Limit, in MB, of size of base64 encoded
                                   # animation in HTML (i.e. IPython notebook)
