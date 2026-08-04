@@ -1,0 +1,35 @@
+#!/bin/sh
+# Strip embedded to_jshtml() animation players from notebooks before they are
+# committed. A single player is tens of MB of base64 frame data; once committed
+# it stays in history forever. Static figures are preserved.
+#
+# Enabled via:  git config core.hooksPath .githooks
+# Bypass once:  git commit --no-verify
+
+set -e
+
+repo=$(git rev-parse --show-toplevel)
+nbs=$(git diff --cached --name-only --diff-filter=ACM -- '*.ipynb')
+[ -z "$nbs" ] && exit 0
+
+# Refuse to run if a staged notebook also has unstaged edits: the hook rewrites
+# the file on disk, which would silently sweep those edits into the commit.
+dirty=$(git diff --name-only -- $nbs)
+if [ -n "$dirty" ]; then
+    echo "pre-commit: these notebooks have unstaged changes, so the strip hook"
+    echo "cannot safely rewrite them:"
+    echo "$dirty" | sed 's/^/  /'
+    echo "Stage them (git add) or stash them, then commit again."
+    exit 1
+fi
+
+out=$(cd "$repo" && python3 strip_animations.py $nbs)
+echo "$out" | grep -v 'nothing to strip' || true
+
+changed=$(git diff --name-only -- $nbs)
+if [ -n "$changed" ]; then
+    (cd "$repo" && git add $changed)
+    echo "pre-commit: stripped animation players and re-staged the above."
+fi
+
+exit 0
